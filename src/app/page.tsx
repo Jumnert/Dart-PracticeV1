@@ -4,7 +4,7 @@ import { ArrowRight, Play, Terminal as TerminalIcon } from "lucide-react";
 import { LearnCatalog } from "@/components/learn-catalog";
 import { Badge } from "@/components/ui/badge";
 import { TextGradient } from "@/components/ui/text-gradient";
-import { categories, exercises } from "@/data/exercises";
+import { exercises } from "@/data/exercises";
 
 export default function LearnPage() {
   const totalOutputLines = exercises.reduce((sum, item) => sum + item.outputLines, 0);
@@ -56,21 +56,6 @@ export default function LearnPage() {
               Browse the answers
             </a>
           </div>
-
-          <dl className="mt-12 grid max-w-3xl grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-4">
-            {categories.map((category) => {
-              const count = exercises.filter((item) => item.category === category.id).length;
-              return (
-                <div key={category.id} className="border-l border-border/70 pl-4">
-                  <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                    {category.short}
-                  </dt>
-                  <dd className="mt-1 text-2xl font-semibold tabular-nums">{count}</dd>
-                  <dd className="mt-1 text-xs text-muted-foreground">{category.label}</dd>
-                </div>
-              );
-            })}
-          </dl>
         </div>
       </section>
 
