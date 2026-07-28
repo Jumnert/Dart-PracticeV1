@@ -31,9 +31,9 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="flex min-h-full flex-col bg-background">
+      <body className="flex min-h-full flex-col bg-background overflow-hidden">
         <SiteHeader />
-        <main className="flex-1">{children}</main>
+        <main className="flex-1 overflow-y-auto">{children}</main>
         <footer className="border-t border-border/60 py-8">
           <div className="mx-auto flex w-full max-w-7xl flex-col items-start justify-between gap-2 px-4 text-xs text-muted-foreground sm:flex-row sm:items-center sm:px-6">
             <p>

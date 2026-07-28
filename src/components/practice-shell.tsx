@@ -536,14 +536,14 @@ export function PracticeShell() {
   );
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="mx-auto flex h-[calc(100vh-3.5rem)] w-full max-w-[1600px] overflow-hidden">
       {/* ── Sidebar ── */}
       <aside
         className={cn(
-          "absolute inset-y-0 left-0 z-30 w-72 shrink-0 translate-x-0 border-r border-border/60 bg-background/95 backdrop-blur-lg transition-transform xl:relative xl:block",
-          sidebarOpen ? "translate-x-16" : "-translate-x-full xl:-translate-x-0",
+          "absolute inset-y-0 left-0 z-30 w-72 shrink-0 border-r border-border/60 bg-white transition-transform xl:relative xl:block",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full xl:translate-x-0",
         )}
-        style={{ marginTop: "4rem", height: "calc(100vh - 4rem)" }}
+        style={{ marginTop: "3.5rem", height: "calc(100vh - 3.5rem)" }}
       >
         <div className="flex h-14 items-center justify-between border-b border-border/60 px-4">
           <span className="text-sm font-semibold">Exercises</span>

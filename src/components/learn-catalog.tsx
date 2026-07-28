@@ -12,7 +12,6 @@ import { CommandSearch, type CommandItem } from "@/components/ui/command-search"
 import { FluidTabs } from "@/components/ui/fluid-tabs";
 import { categories, categoryOf, exercises, type CategoryId } from "@/data/exercises";
 import { useProgress } from "@/lib/progress";
-import { cn } from "@/lib/utils";
 
 type Filter = CategoryId | "all";
 
@@ -23,21 +22,6 @@ const ICONS: Record<Filter, React.ReactNode> = {
   "while-loop": <TbRepeat size={19} />,
   functions: <TbMathFunction size={19} />,
 };
-
-const CATEGORY_CARDS = [
-  {
-    id: "all" as Filter,
-    short: "All",
-    label: "All Exercises",
-    count: exercises.length,
-  },
-  ...categories.map((c) => ({
-    id: c.id as Filter,
-    short: c.short,
-    label: c.label,
-    count: exercises.filter((e) => e.category === c.id).length,
-  })),
-];
 
 export function LearnCatalog() {
   const [filter, setFilter] = useState<Filter>("all");
@@ -80,47 +64,8 @@ export function LearnCatalog() {
 
   return (
     <section className="mx-auto w-full max-w-7xl px-4 pb-24 sm:px-6">
-
       {/* ── Sticky filter bar ── */}
       <div className="sticky top-16 z-30 -mx-4 border-b border-border/50 bg-white/90 px-4 py-4 backdrop-blur-xl sm:-mx-6 sm:px-6">
-
-        {/* Category stat grid */}
-        <div className="mb-4 grid grid-cols-5 gap-2">
-          {CATEGORY_CARDS.map((cat) => {
-            const active = filter === cat.id;
-            return (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => setFilter(cat.id)}
-                className={cn(
-                  "flex flex-col items-start gap-1 rounded-xl border px-4 py-3 text-left transition-all duration-200",
-                  active
-                    ? "border-melon/40 bg-melon/8 shadow-sm ring-1 ring-melon/20"
-                    : "border-border/60 bg-white hover:border-melon/30 hover:bg-melon/5",
-                )}
-              >
-                <span
-                  className={cn(
-                    "flex items-center gap-1.5",
-                    active ? "text-melon" : "text-muted-foreground",
-                  )}
-                >
-                  {ICONS[cat.id]}
-                  <span className={cn("text-[11px] font-semibold uppercase tracking-wider", active ? "text-melon" : "text-muted-foreground")}>
-                    {cat.short}
-                  </span>
-                </span>
-                <span className={cn("text-2xl font-bold tabular-nums leading-none", active ? "text-foreground" : "text-foreground/80")}>
-                  {cat.count}
-                </span>
-                <span className="truncate text-[11px] text-muted-foreground">{cat.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* FluidTabs + search row */}
         <div className="flex items-center justify-between gap-4">
           <FluidTabs
             tabs={tabs}
@@ -135,7 +80,6 @@ export function LearnCatalog() {
             />
           </div>
         </div>
-
         {activeCategory && (
           <p className="mt-2 text-xs text-muted-foreground">{activeCategory.blurb}</p>
         )}
