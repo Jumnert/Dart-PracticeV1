@@ -191,9 +191,30 @@
   );
 }
 
-/* Shiki blocks inside cards should scroll rather than stretch the layout. */
+/* Shiki blocks — let the theme background show in light mode, transparent in dark */
 .shiki,
 pre.shiki {
+  background: transparent !important;
+}
+
+/* In light mode, the code block card area needs a subtle bg so shiki text is visible */
+:root .border-border .shiki code,
+:root [data-slot="code-block"] .shiki code {
+  background: transparent !important;
+}
+
+/* Ensure shiki light theme text colors come through */
+:root .shiki span[style] {
+  /* github-light colors are set via inline style — allow them */
+  color: inherit;
+}
+
+/* Override the transparent pre background only inside code-block cards in light mode */
+:root [data-slot="code-block"] pre {
+  background: oklch(0.975 0 0) !important;
+}
+
+.dark [data-slot="code-block"] pre {
   background: transparent !important;
 }
 
@@ -220,4 +241,8 @@ pre.shiki {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+  ::view-transition-old(root), ::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
 }

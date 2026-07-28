@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import { exercises } from "@/data/exercises";
 import { useProgress } from "@/lib/progress";
 import { cn } from "@/lib/utils";
@@ -15,7 +16,7 @@ export function SiteHeader() {
   const isPractice = pathname.startsWith("/practice");
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/60 bg-white/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur-xl">
       <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between gap-6 px-4 sm:px-6">
 
         {/* Logo */}
@@ -32,7 +33,7 @@ export function SiteHeader() {
           </span>
         </Link>
 
-        {/* Plain nav links */}
+        {/* Nav links */}
         <nav className="flex items-center gap-1" aria-label="Sections">
           <Link
             href="/"
@@ -58,18 +59,26 @@ export function SiteHeader() {
           </Link>
         </nav>
 
-        {/* Progress pill */}
-        <div className="flex items-center gap-2 rounded-full border border-border/70 bg-white px-3 py-1.5">
-          <span className="text-xs font-medium tabular-nums text-muted-foreground">
-            {hydrated ? solved.length : 0}
-            <span className="opacity-50">/{exercises.length}</span>
-          </span>
-          <span className="h-1.5 w-14 overflow-hidden rounded-full bg-muted">
-            <span
-              className="block h-full rounded-full bg-rind transition-[width] duration-500"
-              style={{ width: `${((hydrated ? solved.length : 0) / exercises.length) * 100}%` }}
-            />
-          </span>
+        {/* Right side: progress + theme toggle */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-1.5">
+            <span className="text-xs font-medium tabular-nums text-muted-foreground">
+              {hydrated ? solved.length : 0}
+              <span className="opacity-50">/{exercises.length}</span>
+            </span>
+            <span className="h-1.5 w-14 overflow-hidden rounded-full bg-muted">
+              <span
+                className="block h-full rounded-full bg-rind transition-[width] duration-500"
+                style={{ width: `${((hydrated ? solved.length : 0) / exercises.length) * 100}%` }}
+              />
+            </span>
+          </div>
+
+          <AnimatedThemeToggler
+            variant="circle"
+            duration={400}
+            className="flex size-8 items-center justify-center rounded-full border border-border/70 bg-card text-muted-foreground transition-colors hover:text-foreground [&_svg]:size-4"
+          />
         </div>
 
       </div>

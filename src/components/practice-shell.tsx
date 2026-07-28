@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ChevronLeft,
@@ -9,21 +10,20 @@ import {
   ListChecks,
   RotateCcw,
   Eye,
-  EyeOff,
   CheckCircle2,
   XCircle,
+  BookOpen,
 } from "lucide-react";
 import { BsBraces } from "react-icons/bs";
 import { PiTerminalWindowFill } from "react-icons/pi";
 import { TbMathFunction } from "react-icons/tb";
 import { TbRepeat } from "react-icons/tb";
 import { HiOutlineViewGrid } from "react-icons/hi";
-import { ArrowRight } from "lucide-react";
 
+import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import { DartEditor } from "@/components/dart-editor";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { CommandSearch, type CommandItem } from "@/components/ui/command-search";
 import { RunActionButton, type RunStatus } from "@/components/ui/run-action-button";
 import { Separator } from "@/components/ui/separator";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
@@ -255,7 +255,7 @@ function Workspace({ exercise, onPrev, onNext }: WorkspaceProps) {
       {/* ── Left column: Editor ── */}
       <div className="flex min-h-0 flex-col gap-4 p-4 xl:overflow-y-auto">
         {/* Navigation breadcrumb */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <Badge variant="outline" className="gap-1.5 rounded-full font-mono text-xs">
               {CATEGORY_ICONS[exercise.category]}
@@ -281,14 +281,51 @@ function Workspace({ exercise, onPrev, onNext }: WorkspaceProps) {
             </button>
             <button
               type="button"
-              onClick={() => setShowAnswer((v) => !v)}
+              onClick={() => setShowAnswer(true)}
               className="flex items-center gap-1.5 rounded-full border border-border bg-card/60 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:text-melon"
             >
-              {showAnswer ? <EyeOff className="size-3" /> : <Eye className="size-3" />}
-              {showAnswer ? "Hide answer" : "Peek answer"}
+              <Eye className="size-3" /> Peek answer
             </button>
           </div>
         </div>
+
+        {/* Answer dialog */}
+        <AnimatePresence>
+          {showAnswer && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 bg-black/50"
+                onClick={() => setShowAnswer(false)}
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                className="fixed inset-x-4 top-1/2 z-50 mx-auto max-w-2xl -translate-y-1/2 rounded-2xl border border-border bg-background p-6 shadow-2xl"
+              >
+                <div className="mb-4 flex items-center justify-between">
+                  <p className="text-sm font-semibold">
+                    Reference answer — {exercise.id.toString().padStart(2, "0")} · {exercise.title}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowAnswer(false)}
+                    className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  >
+                    <XCircle className="size-4" />
+                  </button>
+                </div>
+                <pre className="custom-scrollbar max-h-[60vh] overflow-auto rounded-xl border border-border/60 bg-muted/30 p-4 font-mono text-xs leading-relaxed">
+                  {exercise.solution}
+                </pre>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
 
         <Card className="flex-1 overflow-hidden border-border/70 bg-card/60">
           <CardContent className="h-full p-0">
@@ -354,9 +391,9 @@ function Workspace({ exercise, onPrev, onNext }: WorkspaceProps) {
                   exit={{ opacity: 0, scale: 0.85 }}
                   type="button"
                   onClick={onNext}
-                  className="flex items-center gap-1.5 rounded-full bg-rind px-4 py-2 text-sm font-semibold text-white shadow-md shadow-rind/20 transition-transform hover:scale-[1.03]"
+                  className="flex items-center gap-1.5 rounded-full bg-rind px-5 py-3 text-[16px] font-semibold text-white shadow-md shadow-rind/20 transition-transform hover:scale-[1.03] whitespace-nowrap"
                 >
-                  Next <ChevronRight className="size-4" />
+                  Next <ChevronRight className="size-5 shrink-0" />
                 </motion.button>
               )}
             </AnimatePresence>
@@ -401,9 +438,9 @@ function Workspace({ exercise, onPrev, onNext }: WorkspaceProps) {
             </p>
             <ul className="space-y-1">
               {exercise.inputs.map((inp) => (
-                <li key={inp} className="flex gap-2 text-xs">
-                  <span className="mt-1.5 size-1 shrink-0 rounded-full bg-melon" />
-                  <span className="font-mono">{inp}</span>
+                <li key={inp} className="flex gap-2 text-sm">
+                  <span className="mt-2 size-1 shrink-0 rounded-full bg-melon" />
+                  <span className="font-medium text-sm">{inp}</span>
                 </li>
               ))}
             </ul>
@@ -415,9 +452,9 @@ function Workspace({ exercise, onPrev, onNext }: WorkspaceProps) {
             </p>
             <ul className="space-y-1.5">
               {exercise.rules.map((rule) => (
-                <li key={rule} className="flex gap-2 text-xs text-foreground/80">
-                  <span className="mt-1.5 size-1 shrink-0 rounded-full bg-rind" />
-                  <span>{rule}</span>
+                <li key={rule} className="flex gap-2 text-sm text-foreground/80">
+                  <span className="mt-2 size-1 shrink-0 rounded-full bg-rind" />
+                  <span className="font-medium text-sm">{rule}</span>
                 </li>
               ))}
             </ul>
@@ -434,27 +471,6 @@ function Workspace({ exercise, onPrev, onNext }: WorkspaceProps) {
         </div>
 
         <Separator />
-
-        {/* Answer peek */}
-        <AnimatePresence initial={false}>
-          {showAnswer && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-              className="overflow-hidden"
-            >
-              <p className="mb-2 text-xs font-semibold text-muted-foreground uppercase">
-                Reference answer
-              </p>
-              <pre className="custom-scrollbar overflow-x-auto rounded-xl border border-border/60 bg-muted/30 p-4 font-mono text-xs leading-relaxed">
-                {exercise.solution}
-              </pre>
-              <Separator className="mt-4" />
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Expected output */}
         <div>
@@ -522,28 +538,15 @@ export function PracticeShell() {
   const prevId = currentId > 1 ? currentId - 1 : null;
   const nextId = currentId < exercises.length ? currentId + 1 : null;
 
-  const jumpItems = useMemo<CommandItem[]>(
-    () =>
-      exercises.map((ex) => ({
-        id: String(ex.id),
-        title: `${ex.id.toString().padStart(2, "0")} · ${ex.title}`,
-        subtitle: ex.summary,
-        section: categoryOf(ex.category).label,
-        icon: <ArrowRight size={14} />,
-        action: () => goto(ex.id),
-      })),
-    [goto],
-  );
-
   return (
-    <div className="mx-auto flex h-[calc(100vh-3.5rem)] w-full max-w-[1600px] overflow-hidden">
+    <div className="mx-auto flex h-screen w-full max-w-[1600px] overflow-hidden">
       {/* ── Sidebar ── */}
       <aside
         className={cn(
-          "absolute inset-y-0 left-0 z-30 w-72 shrink-0 border-r border-border/60 bg-white transition-transform xl:relative xl:block",
+          "absolute inset-y-0 left-0 z-30 w-72 shrink-0 border-r border-border/60 bg-background transition-transform xl:relative xl:block",
           sidebarOpen ? "translate-x-0" : "-translate-x-full xl:translate-x-0",
         )}
-        style={{ marginTop: "3.5rem", height: "calc(100vh - 3.5rem)" }}
+        style={{ marginTop: 0, height: "100vh" }}
       >
         <div className="flex h-14 items-center justify-between border-b border-border/60 px-4">
           <span className="text-sm font-semibold">Exercises</span>
@@ -581,23 +584,31 @@ export function PracticeShell() {
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top bar */}
         <div className="flex h-12 shrink-0 items-center justify-between border-b border-border/60 bg-background/80 px-4 backdrop-blur">
-          <button
-            type="button"
-            onClick={() => setSidebarOpen((v) => !v)}
-            className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground xl:hidden"
-          >
-            All exercises
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setSidebarOpen((v) => !v)}
+              className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground xl:hidden"
+            >
+              All exercises
+            </button>
+            <Link
+              href="/"
+              className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <BookOpen size={13} /> Learn
+            </Link>
+          </div>
           <div className="hidden items-center gap-2 xl:flex">
             <TextGradient className="text-sm font-medium">
               Exercise {currentId} of {exercises.length}
             </TextGradient>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <CommandSearch
-              items={jumpItems}
-              triggerLabel="Jump to"
-              placeholder="Search exercises"
+            <AnimatedThemeToggler
+              variant="circle"
+              duration={400}
+              className="flex size-7 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:text-foreground [&_svg]:size-3.5"
             />
           </div>
         </div>

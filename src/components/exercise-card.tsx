@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ChevronDown, ListChecks, Sparkles } from "lucide-react";
+import { ChevronDown, ChevronRight, ListChecks } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -87,9 +87,9 @@ export function ExerciseCard({ exercise, categoryLabel, solved }: ExerciseCardPr
             onClick={() => setOpen((value) => !value)}
             aria-expanded={open}
             aria-controls={`answer-${exercise.id}`}
-            className="group flex shrink-0 items-center gap-2 rounded-full border border-border bg-background/70 px-4 py-2 text-sm font-medium transition-colors hover:border-melon/50 hover:text-melon"
+            className="group flex shrink-0 items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium transition-colors hover:border-melon/50 hover:text-melon"
           >
-            <Sparkles className="size-4 opacity-70 transition-opacity group-hover:opacity-100" />
+            <ChevronRight className="size-4 opacity-70 transition-opacity group-hover:opacity-100" />
             {open ? "Hide answer" : "Show answer"}
             <ChevronDown
               className={cn("size-4 transition-transform duration-300", open && "rotate-180")}
@@ -106,7 +106,7 @@ export function ExerciseCard({ exercise, categoryLabel, solved }: ExerciseCardPr
               {exercise.inputs.map((input) => (
                 <li key={input} className="flex gap-2 text-sm text-foreground/80">
                   <span className="mt-2 size-1 shrink-0 rounded-full bg-melon" />
-                  <span className="font-mono text-[13px]">{input}</span>
+                  <span className="font-medium text-sm">{input}</span>
                 </li>
               ))}
             </ul>
@@ -120,7 +120,7 @@ export function ExerciseCard({ exercise, categoryLabel, solved }: ExerciseCardPr
               {exercise.rules.map((rule) => (
                 <li key={rule} className="flex gap-2 text-sm text-foreground/80">
                   <span className="mt-2 size-1 shrink-0 rounded-full bg-rind" />
-                  <span>{rule}</span>
+                  <span className="font-medium text-sm">{rule}</span>
                 </li>
               ))}
             </ul>

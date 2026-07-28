@@ -1,9 +1,13 @@
+import type { Metadata } from "next";
 import { LearnCatalog } from "@/components/learn-catalog";
 
-export const metadata = {
-  title: "Dart Practice · Quiz 1",
+export const metadata: Metadata = {
+  title: "Learn",
   description:
-    "Learn and practice all 60 Dart exercises from Quiz 1 — conditionals, loops, and functions.",
+    "Browse all 60 Dart exercises from Quiz Month 1 — conditionals, for loops, while loops, and functions. Click any card to see the solution and run it live.",
+  alternates: {
+    canonical: "/",
+  },
 };
 
 export default function LearnPage() {

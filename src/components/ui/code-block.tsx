@@ -288,7 +288,7 @@ export function CodeBlock({
         <Collapsible open={!isCollapsed}>
           <div
             className={cn(
-              "overflow-x-auto overflow-y-clip text-sm [&_pre]:bg-transparent [&_pre]:py-4",
+              "overflow-x-auto overflow-y-clip text-sm [&_.shiki]:!bg-transparent [&_pre]:px-0 [&_pre]:py-4",
               isCollapsed && "max-h-[200px]",
             )}
           >

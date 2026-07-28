@@ -193,7 +193,7 @@ export const CommandSearch: FC<Props> = ({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-zinc-950/10 backdrop-blur-[2px] dark:bg-black/40"
+              className="fixed inset-0 z-40 bg-zinc-950/10 dark:bg-black/40"
               onClick={() => setIsOpen(false)}
             />
         )}

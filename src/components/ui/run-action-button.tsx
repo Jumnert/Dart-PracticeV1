@@ -89,7 +89,7 @@ export function RunActionButton({
   const widths = {
     idle: 176,
     running: 232,
-    done: 220,
+    done: 260,
     error: 208,
   } as const;
 
@@ -154,7 +154,7 @@ export function RunActionButton({
             <motion.button
               key="done"
               type="button"
-              onClick={onReset ?? onRun}
+              onClick={onRun}
               initial={{ opacity: 0, scale: 0.8, filter: "blur(4px)" }}
               animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
               exit={{ opacity: 0, scale: 0.8, filter: "blur(4px)" }}
@@ -162,12 +162,12 @@ export function RunActionButton({
               whileTap={{ scale: 0.96 }}
               className="flex flex-1 items-center gap-2 rounded-full bg-[#EAF9EA] px-5 py-3 whitespace-nowrap dark:bg-green-200"
             >
-              <HiBadgeCheck className="h-5 w-5 text-[#22c55e]" />
+              <HiBadgeCheck className="h-5 w-5 shrink-0 text-[#22c55e]" />
               <AnimatedText
                 text={doneLabel}
                 className="text-[16px] font-bold text-[#1f9d4d]"
               />
-              <VscDebugRestart className="ml-1 h-4 w-4 text-[#1f9d4d]" />
+              <VscDebugRestart className="ml-1 h-4 w-4 shrink-0 text-[#1f9d4d]" />
             </motion.button>
           )}
 

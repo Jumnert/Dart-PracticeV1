@@ -54,18 +54,22 @@ export function DartEditor({
     const cached = cache.current.get(key);
     if (cached) return cached;
 
-    codeToHtml(code, { lang: "dart", theme })
-      .then((html) => {
-        const inner = html
-          .replace(/^<pre[^>]*>/, "")
-          .replace(/<\/pre>$/, "")
-          .replace(/^<code[^>]*>/, "")
-          .replace(/<\/code>$/, "");
-        if (cache.current.size > 60) cache.current.clear();
-        cache.current.set(key, inner);
-        force((n) => n + 1);
-      })
-      .catch(() => undefined);
+    // Schedule the async highlight outside of render
+    // Using queueMicrotask ensures we don't update state during render
+    queueMicrotask(() => {
+      codeToHtml(code, { lang: "dart", theme })
+        .then((html) => {
+          const inner = html
+            .replace(/^<pre[^>]*>/, "")
+            .replace(/<\/pre>$/, "")
+            .replace(/^<code[^>]*>/, "")
+            .replace(/<\/code>$/, "");
+          if (cache.current.size > 60) cache.current.clear();
+          cache.current.set(key, inner);
+          force((n) => n + 1);
+        })
+        .catch(() => undefined);
+    });
 
     return FALLBACK(code);
   };

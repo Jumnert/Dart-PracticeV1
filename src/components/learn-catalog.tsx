@@ -5,11 +5,13 @@ import { motion, AnimatePresence } from "motion/react";
 import { BsBraces, BsListNested } from "react-icons/bs";
 import { TbRepeat, TbMathFunction } from "react-icons/tb";
 import { HiOutlineViewGrid } from "react-icons/hi";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Code2 } from "lucide-react";
+import Link from "next/link";
 
 import { ExerciseCard } from "@/components/exercise-card";
 import { CommandSearch, type CommandItem } from "@/components/ui/command-search";
 import { FluidTabs } from "@/components/ui/fluid-tabs";
+import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import { categories, categoryOf, exercises, type CategoryId } from "@/data/exercises";
 import { useProgress } from "@/lib/progress";
 
@@ -63,30 +65,54 @@ export function LearnCatalog() {
   const activeCategory = filter === "all" ? null : categoryOf(filter);
 
   return (
-    <section className="mx-auto w-full max-w-7xl px-4 pb-24 sm:px-6">
-      {/* ── Sticky filter bar ── */}
-      <div className="sticky top-16 z-30 -mx-4 border-b border-border/50 bg-white/90 px-4 py-4 backdrop-blur-xl sm:-mx-6 sm:px-6">
-        <div className="flex items-center justify-between gap-4">
+    <section className="mx-auto w-full max-w-7xl px-4 pb-24 pt-6 sm:px-6">
+      {/* ── Floating sticky FAB bar ── */}
+      <div className="sticky top-4 z-30 flex justify-center pointer-events-none">
+        <div className="pointer-events-auto flex items-center gap-2 rounded-2xl border border-border/60 bg-background/80 px-3 py-2 shadow-lg shadow-black/5 backdrop-blur-xl">
+          {/* Tabs */}
           <FluidTabs
             tabs={tabs}
             defaultActive="all"
             onChange={(id) => setFilter(id as Filter)}
           />
-          <div className="shrink-0">
-            <CommandSearch
-              items={searchItems}
-              triggerLabel="Search exercises"
-              placeholder="Search by title or topic"
-            />
-          </div>
+
+          {/* Divider */}
+          <div className="h-5 w-px bg-border/60" />
+
+          {/* Search */}
+          <CommandSearch
+            items={searchItems}
+            triggerLabel="Search exercises"
+            placeholder="Search by title or topic"
+          />
+
+          {/* Divider */}
+          <div className="h-5 w-px bg-border/60" />
+
+          {/* Practice link */}
+          <Link
+            href="/practice"
+            className="flex items-center gap-1.5 rounded-xl border border-border/60 px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:border-melon/40 hover:text-foreground"
+          >
+            <Code2 size={15} />
+            Practice
+          </Link>
+
+          {/* Dark mode toggle */}
+          <AnimatedThemeToggler
+            variant="circle"
+            duration={400}
+            className="flex size-8 items-center justify-center rounded-xl border border-border/60 text-muted-foreground transition-colors hover:text-foreground [&_svg]:size-4"
+          />
         </div>
-        {activeCategory && (
-          <p className="mt-2 text-xs text-muted-foreground">{activeCategory.blurb}</p>
-        )}
       </div>
 
+      {activeCategory && (
+        <p className="mt-4 text-center text-xs text-muted-foreground">{activeCategory.blurb}</p>
+      )}
+
       {/* ── Exercise list ── */}
-      <motion.div layout className="mt-8 grid gap-5">
+      <motion.div layout className="mt-6 grid gap-5">
         <AnimatePresence mode="popLayout" initial={false}>
           {visible.map((exercise) => (
             <motion.div
