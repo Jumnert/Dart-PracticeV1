@@ -1,36 +1,36 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Dart Practice V1
 
-## Getting Started
+A Next.js web app for learning and practising all **60 Dart exercises** from Quiz 1.
 
-First, run the development server:
+Built with:
+- **Next.js 16** (App Router, TypeScript)
+- **Tailwind CSS v4**
+- **Watermelon UI** components (via `shadcn` registry)
+- **Shiki** for syntax highlighting
+- Local **Dart SDK** execution via an API route
+
+## Features
+
+| Page | Description |
+|------|-------------|
+| **Learn** | Browse all 60 exercises with their reference answers, run a demo against the real Dart SDK |
+| **Practice** | Live code editor, run your code, compare against expected output, earn confetti, unlock the next exercise |
+
+Every expected output in this app was produced by actually running the Dart files through the SDK — no hand-typed strings.
+
+## Getting started
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+ALLOW_DART_EXEC=true npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Make sure [Dart SDK](https://dart.dev/get-dart) (or Flutter) is installed on your machine.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Exercises covered
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **1–10** If-Else & Switch (conditionals, switch expressions, nested decisions)
+- **11–28** For Loop (nested loops, reports, patterns, matrices)
+- **29–40** While & Do-While (sentinel loops, digit maths, ATM simulation)
+- **41–60** Functions (positional, named, optional parameters, lambdas, composition)
+# Dart-PracticeV1
