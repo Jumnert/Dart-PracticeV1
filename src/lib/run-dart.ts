@@ -14,18 +14,35 @@ export async function runDart(source: string): Promise<DartRunResult> {
       body: JSON.stringify({ source }),
     });
 
+    const responseText = await response.text();
+    let detail: { error?: string; stderr?: string } | null = null;
+    try {
+      detail = JSON.parse(responseText);
+    } catch {
+      // ignore
+    }
+
     if (!response.ok && response.status !== 403) {
-      const detail = await response.json().catch(() => null);
       return {
         stdout: "",
-        stderr: detail?.error ?? `Runner failed with status ${response.status}.`,
+        stderr: detail?.error ?? detail?.stderr ?? `Runner failed with status ${response.status}: ${responseText.slice(0, 100)}`,
         exitCode: 1,
         durationMs: 0,
         timedOut: false,
       };
     }
 
-    return (await response.json()) as DartRunResult;
+    if (detail) {
+      return detail as unknown as DartRunResult;
+    }
+
+    return {
+      stdout: "",
+      stderr: "Invalid response format from server.",
+      exitCode: 1,
+      durationMs: 0,
+      timedOut: false,
+    };
   } catch (error) {
     return {
       stdout: "",
