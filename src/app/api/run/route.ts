@@ -24,6 +24,7 @@ function executionAllowed(): boolean {
 
 const CANDIDATE_PATHS = [
   process.env.DART_SDK_BIN,
+  "/Users/apple/development/flutter/bin/dart",
   "/opt/homebrew/bin/dart",
   "/usr/local/bin/dart",
   "/usr/bin/dart",
