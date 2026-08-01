@@ -138,51 +138,130 @@ async function runWithDartPad(source: string): Promise<RunResult> {
   const setupScript = `
     (function() {
       const dartxSymbols = {};
+
+      // Pre-register common Dart number/string extension methods eagerly so
+      // they work on raw primitive values (e.g. 35[$toStringAsFixed]) before
+      // the DDC module accesses dartx for the first time.
+      function registerSym(s) {
+        if (dartxSymbols[s]) return dartxSymbols[s];
+        const sym = Symbol("dartx." + s);
+        dartxSymbols[s] = sym;
+        if (s === 'toStringAsFixed') {
+          Number.prototype[sym] = function(d) { return this.toFixed(d); };
+        } else if (s === 'toStringAsPrecision') {
+          Number.prototype[sym] = function(d) { return this.toPrecision(d); };
+        } else if (s === 'toStringAsExponential') {
+          Number.prototype[sym] = function(d) { return this.toExponential(d); };
+        } else if (s === 'toRadixString') {
+          Number.prototype[sym] = function(r) { return Math.trunc(this).toString(r); };
+        } else if (s === 'abs') {
+          Number.prototype[sym] = function() { return Math.abs(Number(this)); };
+        } else if (s === 'ceil') {
+          Number.prototype[sym] = function() { return Math.ceil(Number(this)); };
+        } else if (s === 'floor') {
+          Number.prototype[sym] = function() { return Math.floor(Number(this)); };
+        } else if (s === 'round') {
+          Number.prototype[sym] = function() { return Math.round(Number(this)); };
+        } else if (s === 'truncate') {
+          Number.prototype[sym] = function() { return Math.trunc(Number(this)); };
+        } else if (s === 'isNaN') {
+          Number.prototype[sym] = function() { return isNaN(Number(this)); };
+        } else if (s === 'isFinite') {
+          Number.prototype[sym] = function() { return isFinite(Number(this)); };
+        } else if (s === 'isInfinite') {
+          Number.prototype[sym] = function() { return !isFinite(Number(this)) && !isNaN(Number(this)); };
+        } else if (s === 'isNegative') {
+          Number.prototype[sym] = function() { return Number(this) < 0; };
+        } else if (s === 'sign') {
+          Number.prototype[sym] = function() { return Math.sign(Number(this)); };
+        } else if (s === 'clamp') {
+          Number.prototype[sym] = function(lo, hi) { const v = Number(this); return v < lo ? lo : v > hi ? hi : v; };
+        } else if (s === 'remainder') {
+          Number.prototype[sym] = function(n) { return Number(this) % Number(n); };
+        } else if (s === 'modulo') {
+          Number.prototype[sym] = function(n) { const r = Number(this) % Number(n); return r < 0 ? r + Math.abs(Number(n)) : r; };
+        } else if (s === 'compareTo') {
+          Number.prototype[sym] = function(o) { const a = Number(this), b = Number(o); return a < b ? -1 : a > b ? 1 : 0; };
+          String.prototype[sym] = function(o) { return this < o ? -1 : this > o ? 1 : 0; };
+        } else if (s === 'toString') {
+          Number.prototype[sym] = function() { return String(Number(this)); };
+          Object.prototype[sym] = function() { return String(this); };
+        } else if (s === 'toLowerCase') {
+          String.prototype[sym] = function() { return this.toLowerCase(); };
+        } else if (s === 'toUpperCase') {
+          String.prototype[sym] = function() { return this.toUpperCase(); };
+        } else if (s === 'trim') {
+          String.prototype[sym] = function() { return this.trim(); };
+        } else if (s === 'trimLeft' || s === 'trimStart') {
+          String.prototype[sym] = function() { return this.trimStart(); };
+        } else if (s === 'trimRight' || s === 'trimEnd') {
+          String.prototype[sym] = function() { return this.trimEnd(); };
+        } else if (s === 'split') {
+          String.prototype[sym] = function(sep) { return this.split(sep); };
+        } else if (s === 'contains') {
+          String.prototype[sym] = function(sub, start) { return start !== undefined ? this.indexOf(sub, start) >= 0 : this.includes(sub); };
+          Array.prototype[sym] = function(el) { return this.includes(el); };
+        } else if (s === 'startsWith') {
+          String.prototype[sym] = function(s2, pos) { return pos !== undefined ? this.startsWith(s2, pos) : this.startsWith(s2); };
+        } else if (s === 'endsWith') {
+          String.prototype[sym] = function(s2) { return this.endsWith(s2); };
+        } else if (s === 'indexOf') {
+          String.prototype[sym] = function(sub, start) { return this.indexOf(sub, start); };
+          Array.prototype[sym] = function(el, start) { return this.indexOf(el, start); };
+        } else if (s === 'lastIndexOf') {
+          String.prototype[sym] = function(sub, start) { return start !== undefined ? this.lastIndexOf(sub, start) : this.lastIndexOf(sub); };
+          Array.prototype[sym] = function(el, start) { return start !== undefined ? this.lastIndexOf(el, start) : this.lastIndexOf(el); };
+        } else if (s === 'substring') {
+          String.prototype[sym] = function(start, end) { return this.substring(start, end); };
+        } else if (s === 'replaceAll') {
+          String.prototype[sym] = function(from, to) { return this.split(from).join(to); };
+        } else if (s === 'replaceFirst') {
+          String.prototype[sym] = function(from, to) { return this.replace(from, to); };
+        } else if (s === 'padLeft') {
+          String.prototype[sym] = function(width, fill) { return this.padStart(width, fill || ' '); };
+        } else if (s === 'padRight') {
+          String.prototype[sym] = function(width, fill) { return this.padEnd(width, fill || ' '); };
+        } else if (s === 'join') {
+          Array.prototype[sym] = function(sep) { return this.join(sep); };
+        } else if (s === 'reversed') {
+          Object.defineProperty(Array.prototype, sym, { get: function() { return [...this].reverse(); }, configurable: true });
+        } else if (s === 'first') {
+          Object.defineProperty(Array.prototype, sym, { get: function() { return this[0]; }, configurable: true });
+        } else if (s === 'last') {
+          Object.defineProperty(Array.prototype, sym, { get: function() { return this[this.length - 1]; }, configurable: true });
+        } else if (s === 'isEmpty') {
+          Object.defineProperty(Array.prototype, sym, { get: function() { return this.length === 0; }, configurable: true });
+          Object.defineProperty(String.prototype, sym, { get: function() { return this.length === 0; }, configurable: true });
+        } else if (s === 'isNotEmpty') {
+          Object.defineProperty(Array.prototype, sym, { get: function() { return this.length > 0; }, configurable: true });
+          Object.defineProperty(String.prototype, sym, { get: function() { return this.length > 0; }, configurable: true });
+        } else if (s === 'length') {
+          // handled by get$length
+        } else {
+          // Fallback: try calling native method with same name
+          Object.prototype[sym] = function(...args) {
+            if (typeof this[s] === 'function') return this[s](...args);
+            return this;
+          };
+        }
+        return sym;
+      }
+
+      // Eagerly pre-register the most common ones used across exercises
+      [
+        'toStringAsFixed','toStringAsPrecision','toStringAsExponential','toRadixString',
+        'abs','ceil','floor','round','truncate','clamp','sign','remainder','modulo',
+        'isNaN','isFinite','isInfinite','isNegative','compareTo','toString',
+        'toLowerCase','toUpperCase','trim','trimLeft','trimRight','trimStart','trimEnd',
+        'split','contains','startsWith','endsWith','indexOf','lastIndexOf',
+        'substring','replaceAll','replaceFirst','padLeft','padRight',
+        'join','reversed','first','last','isEmpty','isNotEmpty',
+      ].forEach(registerSym);
+
       self.dartx = new Proxy({}, {
         get: (_target, prop) => {
           const s = String(prop);
-          if (!dartxSymbols[s]) {
-            const sym = Symbol("dartx." + s);
-            dartxSymbols[s] = sym;
-            if (s === 'toStringAsFixed') {
-              Number.prototype[sym] = function(fractionDigits) { return this.toFixed(fractionDigits); };
-              Object.prototype[sym] = function(fractionDigits) { return Number(this).toFixed(fractionDigits); };
-            } else if (s === 'trimRight' || s === 'trimEnd') {
-              String.prototype[sym] = function() { return this.trimEnd(); };
-              Object.prototype[sym] = function() { return String(this).trimEnd(); };
-            } else if (s === 'trimLeft' || s === 'trimStart') {
-              String.prototype[sym] = function() { return this.trimStart(); };
-              Object.prototype[sym] = function() { return String(this).trimStart(); };
-            } else if (s === 'toLowerCase') {
-              String.prototype[sym] = function() { return this.toLowerCase(); };
-              Object.prototype[sym] = function() { return String(this).toLowerCase(); };
-            } else if (s === 'toUpperCase') {
-              String.prototype[sym] = function() { return this.toUpperCase(); };
-              Object.prototype[sym] = function() { return String(this).toUpperCase(); };
-            } else if (s === 'split') {
-              String.prototype[sym] = function(sep) { return this.split(sep); };
-              Object.prototype[sym] = function(sep) { return String(this).split(sep); };
-            } else if (s === 'join') {
-              Array.prototype[sym] = function(sep) { return this.join(sep); };
-              Object.prototype[sym] = function(sep) { return Array.from(this).join(sep); };
-            } else if (s === 'toString') {
-              Object.prototype[sym] = function() { return String(this); };
-            } else if (s === 'modulo') {
-              Number.prototype[sym] = function(n) { return this % n; };
-              Object.prototype[sym] = function(n) { return Number(this) % n; };
-            } else if (s === 'get$length' || s === 'length') {
-              Object.defineProperty(Object.prototype, sym, {
-                get: function() { return this.length ?? 0; },
-                configurable: true
-              });
-            } else {
-              Object.prototype[sym] = function(...args) {
-                if (typeof this[s] === 'function') return this[s](...args);
-                return this;
-              };
-            }
-          }
-          return dartxSymbols[s];
+          return registerSym(s);
         }
       });
 
@@ -280,13 +359,61 @@ async function runWithDartPad(source: string): Promise<RunResult> {
 
   const remainingMs = Math.max(1_000, TIMEOUT_MS - (Date.now() - started));
 
+  // ── 3. Patch DDC output so x[$dartxMethod](args) → Object(x)[$dartxMethod](args) ──
+  // DDC caches dartx symbols as `var $toStringAsFixed = dartx.toStringAsFixed;`
+  // then calls them as `x[$toStringAsFixed](n)` — but primitive JS numbers/strings
+  // don't auto-box for Symbol-keyed property access. Wrapping in Object() fixes this.
+  function patchDdcJs(code: string): string {
+    // Collect all DDC-emitted dartx symbol variable names: `var $foo = dartx.foo;`
+    const symVarNames: string[] = [];
+    const declRe = /\bvar\s+(\$\w+)\s*=\s*dartx\.\w+\s*;/g;
+    let dm: RegExpExecArray | null;
+    while ((dm = declRe.exec(code)) !== null) {
+      symVarNames.push(dm[1]);
+    }
+    if (symVarNames.length === 0) return code;
+
+    // For each line, do simple string replacements of `ident[$sym](` → `Object(ident)[$sym](`
+    // Using simple indexOf for speed (no catastrophic backtracking).
+    const lines = code.split("\n");
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i];
+      for (const sym of symVarNames) {
+        const needle = `[${sym}](`;
+        let idx = line.indexOf(needle);
+        while (idx !== -1) {
+          // Walk backwards to find the start of the receiver identifier
+          let start = idx - 1;
+          // Skip whitespace
+          while (start >= 0 && (line[start] === " " || line[start] === "\t")) start--;
+          if (start < 0) { idx = line.indexOf(needle, idx + 1); continue; }
+          // Collect identifier characters (alphanumeric, $, _, .)
+          const endOfRecv = start;
+          while (start > 0 && /[\w$.]/.test(line[start - 1])) start--;
+          const recv = line.slice(start, endOfRecv + 1);
+          if (!recv || recv === "Object") { idx = line.indexOf(needle, idx + needle.length); continue; }
+          const before = line.slice(0, start);
+          const after = line.slice(endOfRecv + 1);
+          line = `${before}Object(${recv})${after}`;
+          // Advance past the replaced section
+          idx = line.indexOf(needle, before.length + `Object(${recv})`.length + needle.length);
+        }
+      }
+      lines[i] = line;
+    }
+    return lines.join("\n");
+  }
+
+  const patchedJsCode = patchDdcJs(jsCode);
+
   try {
     const fullScript =
       setupScript +
       "\n;\n" +
-      jsCode +
+      patchedJsCode +
       "\n;\n if (self.__getModuleExport()) { const m = self.__getModuleExport(); const mainMod = m.dartpad_sample__main || m.dartpad_sample__bootstrap; if (mainMod && typeof mainMod.main === 'function') mainMod.main(); }";
     runInNewContext(fullScript, sandbox, { timeout: remainingMs });
+
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     if (
