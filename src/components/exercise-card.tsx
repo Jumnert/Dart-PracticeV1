@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ChevronDown, ChevronRight, ListChecks } from "lucide-react";
+import { ChevronDown, ChevronRight, ListChecks, Copy, Check } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { CodeBlock } from "@/components/ui/code-block";
+import { CodeBlock, useCopyToClipboard } from "@/components/ui/code-block";
 import { RunActionButton, type RunStatus } from "@/components/ui/run-action-button";
 import { StatusIndicator } from "@/components/ui/status-indicator";
 import { Terminal } from "@/components/ui/terminal";
@@ -29,6 +30,33 @@ export function ExerciseCard({ exercise, categoryLabel, solved }: ExerciseCardPr
     exitCode: number;
     durationMs: number;
   } | null>(null);
+  const { copiedId, copy } = useCopyToClipboard();
+  const isCopied = copiedId === `answer-copy-${exercise.id}`;
+  const answerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "a" && (e.ctrlKey || e.metaKey)) {
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0) {
+          const node = sel.anchorNode;
+          if (answerRef.current && answerRef.current.contains(node)) {
+            e.preventDefault();
+            const codeElement = answerRef.current.querySelector("code");
+            if (codeElement) {
+              const range = document.createRange();
+              range.selectNodeContents(codeElement);
+              sel.removeAllRanges();
+              sel.addRange(range);
+            }
+          }
+        }
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open]);
 
   const demoRun = useCallback(async () => {
     setStatus("running");
@@ -131,6 +159,7 @@ export function ExerciseCard({ exercise, categoryLabel, solved }: ExerciseCardPr
       <AnimatePresence initial={false}>
         {open && (
           <motion.div
+            ref={answerRef}
             id={`answer-${exercise.id}`}
             key="answer"
             initial={{ height: 0, opacity: 0 }}
@@ -157,6 +186,15 @@ export function ExerciseCard({ exercise, categoryLabel, solved }: ExerciseCardPr
                   </p>
                 </div>
                 <div className="flex items-center gap-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => copy(exercise.solution, `answer-copy-${exercise.id}`)}
+                    className="h-8 gap-1.5"
+                  >
+                    {isCopied ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5 text-muted-foreground" />}
+                    {isCopied ? "Copied!" : "Copy Answer"}
+                  </Button>
                   <StatusIndicator
                     state={
                       status === "running"
