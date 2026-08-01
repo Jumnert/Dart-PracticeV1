@@ -94,40 +94,6 @@ async function runWithDartPad(source: string): Promise<RunResult> {
       },
     },
     self: undefined as unknown,
-    Math,
-    Array,
-    Object,
-    String,
-    Number,
-    Boolean,
-    Error,
-    Date,
-    JSON,
-    RegExp,
-    Promise,
-    Map,
-    Set,
-    WeakMap,
-    WeakSet,
-    Symbol,
-    Int8Array,
-    Uint8Array,
-    Uint8ClampedArray,
-    Int16Array,
-    Uint16Array,
-    Int32Array,
-    Uint32Array,
-    Float32Array,
-    Float64Array,
-    ArrayBuffer,
-    DataView,
-    isNaN,
-    isFinite,
-    parseInt,
-    parseFloat,
-    Infinity,
-    NaN,
-    undefined,
     setTimeout,
     clearTimeout,
     setInterval,
@@ -235,8 +201,18 @@ async function runWithDartPad(source: string): Promise<RunResult> {
         } else if (s === 'isNotEmpty') {
           Object.defineProperty(Array.prototype, sym, { get: function() { return this.length > 0; }, configurable: true });
           Object.defineProperty(String.prototype, sym, { get: function() { return this.length > 0; }, configurable: true });
+        } else if (s === '_get') {
+          // Dart List operator[] — array index access
+          Array.prototype[sym] = function(i) { return this[i]; };
+          String.prototype[sym] = function(i) { return this[i]; };
+        } else if (s === '_set') {
+          // Dart List operator[]= — array index set
+          Array.prototype[sym] = function(i, v) { this[i] = v; return v; };
         } else if (s === 'length') {
-          // handled by get$length
+          Object.defineProperty(Array.prototype, sym, { get: function() { return this.length; }, configurable: true });
+          Object.defineProperty(String.prototype, sym, { get: function() { return this.length; }, configurable: true });
+        } else if (s === 'length') {
+          // handled above
         } else {
           // Fallback: try calling native method with same name
           Object.prototype[sym] = function(...args) {
@@ -256,6 +232,7 @@ async function runWithDartPad(source: string): Promise<RunResult> {
         'split','contains','startsWith','endsWith','indexOf','lastIndexOf',
         'substring','replaceAll','replaceFirst','padLeft','padRight',
         'join','reversed','first','last','isEmpty','isNotEmpty',
+        '_get','_set','length',
       ].forEach(registerSym);
 
       self.dartx = new Proxy({}, {
@@ -266,7 +243,10 @@ async function runWithDartPad(source: string): Promise<RunResult> {
       });
 
       const JSArrayClass = class JSArray extends Array {
-        static of(arr) { return arr; }
+        static of() { 
+          const arr = arguments[arguments.length - 1];
+          return Array.isArray(arr) ? arr : Array.from(arguments);
+        }
       };
 
       self.dart_rti = {
@@ -311,12 +291,19 @@ async function runWithDartPad(source: string): Promise<RunResult> {
         constList: (_type, list) => list,
         constMap: (_type, map) => map,
         constSet: (_type, set) => set,
+        typeUniverse: {},
+        moduleConstCaches: new Map(),
         defineLazy: (obj, props) => {
           for (const prop in props) {
-            const val = props[prop];
-            const getter = typeof val === "function" ? val : () => val;
+            const descriptor = Object.getOwnPropertyDescriptor(props, prop);
             try {
-              Object.defineProperty(obj, prop, { get: getter, enumerable: true, configurable: true });
+              if (descriptor && descriptor.get) {
+                Object.defineProperty(obj, prop, { get: descriptor.get, enumerable: true, configurable: true });
+              } else {
+                const val = props[prop];
+                const getter = typeof val === "function" ? val : () => val;
+                Object.defineProperty(obj, prop, { get: getter, enumerable: true, configurable: true });
+              }
             } catch (_) {}
           }
         }
@@ -354,49 +341,71 @@ async function runWithDartPad(source: string): Promise<RunResult> {
         moduleExport = factory(self.dart_sdk);
       };
       self.__getModuleExport = () => moduleExport;
+
+      // __dx: helper for dartx extension method dispatch.
+      // DDC emits x[$sym](args); we rewrite to __dx(x,$sym)(args).
+      // Object(recv) forces auto-boxing so Symbol-keyed prototype methods work.
+      self.__dx = function(recv, sym) {
+        const boxed = Object(recv);
+        const fn = boxed[sym];
+        if (typeof fn === 'function') return fn.bind(boxed);
+        // Fallback: return a no-op function to avoid crash
+        return function() { return recv; };
+      };
     })();
   `;
 
   const remainingMs = Math.max(1_000, TIMEOUT_MS - (Date.now() - started));
 
-  // ── 3. Patch DDC output so x[$dartxMethod](args) → Object(x)[$dartxMethod](args) ──
-  // DDC caches dartx symbols as `var $toStringAsFixed = dartx.toStringAsFixed;`
-  // then calls them as `x[$toStringAsFixed](n)` — but primitive JS numbers/strings
-  // don't auto-box for Symbol-keyed property access. Wrapping in Object() fixes this.
+  // ── 3. Patch DDC output: wrap identifier receivers of [$dartxSym]( with __dx ─
+  // Only primitives (numbers/strings) need boxing. They appear as simple identifiers:
+  //   x[$sym](args)  →  __dx(x, $sym)(args)
+  // Chained calls like x[$toString]()[$padLeft](2) have a JS object as receiver
+  // for [$padLeft] already (the String returned by [$toString]()), so they don't
+  // need wrapping — and are too complex to patch safely anyway.
   function patchDdcJs(code: string): string {
-    // Collect all DDC-emitted dartx symbol variable names: `var $foo = dartx.foo;`
-    const symVarNames: string[] = [];
     const declRe = /\bvar\s+(\$\w+)\s*=\s*dartx\.\w+\s*;/g;
+    const symSet = new Set<string>();
     let dm: RegExpExecArray | null;
-    while ((dm = declRe.exec(code)) !== null) {
-      symVarNames.push(dm[1]);
-    }
-    if (symVarNames.length === 0) return code;
+    while ((dm = declRe.exec(code)) !== null) symSet.add(dm[1]);
+    if (symSet.size === 0) return code;
 
-    // For each line, do simple string replacements of `ident[$sym](` → `Object(ident)[$sym](`
-    // Using simple indexOf for speed (no catastrophic backtracking).
     const lines = code.split("\n");
     for (let i = 0; i < lines.length; i++) {
       let line = lines[i];
-      for (const sym of symVarNames) {
+      for (const sym of symSet) {
         const needle = `[${sym}](`;
-        let idx = line.indexOf(needle);
-        while (idx !== -1) {
-          // Walk backwards to find the start of the receiver identifier
-          let start = idx - 1;
-          // Skip whitespace
-          while (start >= 0 && (line[start] === " " || line[start] === "\t")) start--;
-          if (start < 0) { idx = line.indexOf(needle, idx + 1); continue; }
-          // Collect identifier characters (alphanumeric, $, _, .)
-          const endOfRecv = start;
-          while (start > 0 && /[\w$.]/.test(line[start - 1])) start--;
-          const recv = line.slice(start, endOfRecv + 1);
-          if (!recv || recv === "Object") { idx = line.indexOf(needle, idx + needle.length); continue; }
-          const before = line.slice(0, start);
-          const after = line.slice(endOfRecv + 1);
-          line = `${before}Object(${recv})${after}`;
-          // Advance past the replaced section
-          idx = line.indexOf(needle, before.length + `Object(${recv})`.length + needle.length);
+        let searchFrom = 0;
+        while (true) {
+          const idx = line.indexOf(needle, searchFrom);
+          if (idx === -1) break;
+
+          // Find the char just before the `[`
+          let pos = idx - 1;
+          // Skip spaces/tabs
+          while (pos >= 0 && (line[pos] === " " || line[pos] === "\t")) pos--;
+
+          if (pos < 0) { searchFrom = idx + needle.length; continue; }
+
+          // If the char before `[` is `)`, it's a chained call — skip (already boxed)
+          if (line[pos] === ")") { searchFrom = idx + needle.length; continue; }
+
+          // Walk back over a simple identifier/member (letters, digits, $, _, .)
+          const recvEnd = pos;
+          while (pos > 0 && /[\w$.]/.test(line[pos - 1])) pos--;
+          const recvStart = pos;
+
+          const recv = line.slice(recvStart, recvEnd + 1);
+          // Skip if already wrapped or empty
+          if (!recv || recv === "__dx" || recv === "Object") {
+            searchFrom = idx + needle.length; continue;
+          }
+
+          const before = line.slice(0, recvStart);
+          const after = line.slice(recvEnd + 1); // starts with [sym](
+          const replacement = `__dx(${recv}, ${sym})(`;
+          line = `${before}${replacement}${after.slice(needle.length)}`;
+          searchFrom = before.length + replacement.length;
         }
       }
       lines[i] = line;
@@ -405,6 +414,7 @@ async function runWithDartPad(source: string): Promise<RunResult> {
   }
 
   const patchedJsCode = patchDdcJs(jsCode);
+
 
   try {
     const fullScript =
